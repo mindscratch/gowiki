@@ -58,6 +58,10 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	http.Redirect(w, r, "/view/"+title, http.StatusFound)
 }
 
+func rootHandler(w http.ResponseWriter, r *http.Request, title string) {
+	http.Redirect(w, r, "/view/FrontPage", http.StatusFound)
+}
+
 var templates = template.Must(template.ParseFiles("tmpl/edit.html", "tmpl/view.html"))
 
 func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
@@ -73,10 +77,13 @@ var titleValidator = regexp.MustCompile("^[a-zA-Z0-9]+$")
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		title := r.URL.Path[lenPath:]
-		if !titleValidator.MatchString(title) {
-			http.NotFound(w, r)
-			return
+		title := r.URL.Path
+		if title != "/" {
+			title = title[lenPath:]
+			if !titleValidator.MatchString(title) {
+				http.NotFound(w, r)
+				return
+			}
 		}
 		fn(w, r, title)
 	}
@@ -86,5 +93,6 @@ func main() {
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
 	http.HandleFunc("/save/", makeHandler(saveHandler))
+	http.HandleFunc("/", makeHandler(rootHandler))
 	http.ListenAndServe(":8080", nil)
 }
